@@ -1,34 +1,4 @@
-git init
-```
 
-**Kết quả:**
-```
-Initialized empty Git repository in C:/Users/.../quan-ly-chi-tieu/.git/
-```
-
-✅ Thấy dòng này = Thành công!
-
-**Điều gì xảy ra?**
-- Git tạo thư mục ẩn `.git` trong dự án
-- Thư mục này chứa toàn bộ lịch sử thay đổi code
-
----
-
-## **BƯỚC 5: Tạo 2 file quan trọng**
-
-### **File 1: `.gitignore`**
-
-**Tại sao cần?**
-- Có những file KHÔNG NÊN đẩy lên GitHub:
-  - `__pycache__/` - file rác Python tự tạo
-  - `*.pyc` - file biên dịch Python
-  - `*.db`, `*.sqlite` - database (có thể chứa thông tin nhạy cảm)
-  - `.vscode/` - cấu hình cá nhân VS Code
-  
-- `.gitignore` nói cho Git: "Bỏ qua những file này"
-
-**Nội dung file:**
-```
 __pycache__/
 *.pyc
 *.db
