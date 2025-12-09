@@ -76,8 +76,10 @@ class UngDungQuanLy(QMainWindow):
         return ket_qua
 
     def dinh_dang_tien(self,so_tien):
-        return f"${int(so_tien):,}"
-
+        if so_tien == int(so_tien):
+            return f"${int(so_tien):,}"
+        else:
+            return f"${so_tien:,.2f}"
     def tai_danh_muc(self):
         self.combo_category.clear()
         loai = "thu" if self.radio_thu.isChecked() else "chi"
@@ -139,7 +141,7 @@ class UngDungQuanLy(QMainWindow):
         for so_dong,gd in enumerate(danh_sach_loc):
             self.table_transactions.insertRow(so_dong)
 
-            ngay= datetime.strptime(gd['ngay'],"%Y-%m-%d").strftime("%Y/%m/%d")
+            ngay= datetime.strptime(gd['ngay'],"%Y-%m-%d").strftime('%d/%m/%Y')
             o_ngay=QTableWidgetItem(ngay)
             o_ngay.setData(Qt.UserRole, gd['id'])
             self.table_transactions.setItem(so_dong,0,o_ngay)
@@ -177,41 +179,45 @@ class UngDungQuanLy(QMainWindow):
         self.label_balance.setText(f'Còn lại :{self.dinh_dang_tien(con_lai)}')
 
     def chon_dong_de_sua(self):
-        dong_chon = self.table_transactions.currentRow()
-        if dong_chon < 0:
+        cac_dong_chon = self.table_transactions.selectionModel().selectedRows()
+        if len(cac_dong_chon) != 1:
             return
-
+        dong_chon = cac_dong_chon[0].row()
         id_giao_dich = self.table_transactions.item(dong_chon, 0).data(Qt.UserRole)
         giao_dich = self.doc_csv("giao_dich.csv")
 
         for gd in giao_dich:
             if gd['id'] == id_giao_dich:
-                self.input_amount.setText(str(int(float(gd['so_tien']))))
+                self.input_amount.setText(str(float(gd['so_tien'])))
                 self.date_edit.setDate(datetime.strptime(gd['ngay'], '%Y-%m-%d'))
                 self.input_note.setText(gd['ghi_chu'])
 
-                if gd['loai']=="thu":
+                if gd['loai'] == "thu":
                     self.radio_thu.setChecked(True)
                 else:
                     self.radio_chi.setChecked(True)
                 vi_tri = self.combo_category.findData(gd["ma_danh_muc"])
 
-                if vi_tri >=0:
+                if vi_tri >= 0:
                     self.combo_category.setCurrentIndex(vi_tri)
                 break
     def sua_giao_dich(self):
-        dong_chon = self.table_transactions.currentRow()
-        if dong_chon <0:
-            QMessageBox.warning(self,"Lỗi", "Chưa chọn giao dịch cần sửa")
+        cac_dong_chon = self.table_transactions.selectionModel().selectedRows()
+        if len(cac_dong_chon) == 0:
+            QMessageBox.warning(self, "Lỗi", "Chưa chọn giao dịch cần sửa")
             return
+        elif len(cac_dong_chon) > 1:
+            QMessageBox.warning(self, "Lỗi", "Chỉ có thể sửa 1 giao dịch tại một thời điểm")
+            return
+        dong_chon = cac_dong_chon[0].row()
         try:
-            id_giao_dich = self.table_transactions.item(dong_chon,0).data(Qt.UserRole)
+            id_giao_dich = self.table_transactions.item(dong_chon, 0).data(Qt.UserRole)
 
             so_tien = float(self.input_amount.text().strip())
-            ma_danh_muc =self.combo_category.currentData()
-            ngay= self.date_edit.date().toString("yyyy-MM-dd")
-            ghi_chu= self.input_note.text().strip()
-            loai= "thu" if self.radio_thu.isChecked() else "chi"
+            ma_danh_muc = self.combo_category.currentData()
+            ngay = self.date_edit.date().toString("yyyy-MM-dd")
+            ghi_chu = self.input_note.text().strip()
+            loai = "thu" if self.radio_thu.isChecked() else "chi"
 
             giao_dich = self.doc_csv("giao_dich.csv")
 
@@ -237,22 +243,25 @@ class UngDungQuanLy(QMainWindow):
             QMessageBox.critical(self, "Lỗi", f"Lỗi: {e}")
 
     def xoa_giao_dich(self):
-        dong_chon= self.table_transactions.currentRow()
-        if dong_chon < 0:
+        cac_dong_chon = self.table_transactions.selectionModel().selectedRows()
+        if len(cac_dong_chon) == 0:
             QMessageBox.warning(self, "Lỗi", "Chưa chọn giao dịch cần xóa")
             return
-
         tra_loi = QMessageBox.question(self, "Xác nhận",
-                                        "Bạn có chắc muốn xóa giao dịch này?",
-                                        QMessageBox.Yes | QMessageBox.No)
+                                           f"Bạn có chắc muốn xóa {len(cac_dong_chon)} giao dịch này?",
+                                           QMessageBox.Yes | QMessageBox.No)
         if tra_loi == QMessageBox.Yes:
             try:
-                id_giao_dich = self.table_transactions.item(dong_chon, 0).data(Qt.UserRole)
+                cac_id_xoa = []
+                for dong in cac_dong_chon:
+                    id_giao_dich = self.table_transactions.item(dong.row(), 0).data(Qt.UserRole)
+                    cac_id_xoa.append(id_giao_dich)
+
                 giao_dich = self.doc_csv("giao_dich.csv")
-                giao_dich =[gd for gd in giao_dich if gd['id'] != id_giao_dich]
+                giao_dich = [gd for gd in giao_dich if gd['id'] not in cac_id_xoa]
                 self.ghi_csv('giao_dich.csv', giao_dich,
-                             ['id', 'so_tien', 'ma_danh_muc', 'ngay', 'ghi_chu', 'loai'])
-                QMessageBox.information(self, "Thành công", "Đã xóa giao dịch thành công")
+                            ['id', 'so_tien', 'ma_danh_muc', 'ngay', 'ghi_chu', 'loai'])
+                QMessageBox.information(self, "Thành công", f"Đã xóa {len(cac_id_xoa)} giao dịch thành công")
 
                 self.xoa_form()
                 self.tai_bang_giao_dich()
